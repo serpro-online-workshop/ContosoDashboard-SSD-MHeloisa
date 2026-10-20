@@ -83,7 +83,7 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 
 - **Framework**: ASP.NET Core 8.0
 - **UI**: Blazor Server
-- **Database**: SQL Server LocalDB with Entity Framework Core
+- **Database**: SQLite with Entity Framework Core
 - **Authentication**: Cookie-based mock authentication for training (Azure AD/Microsoft Entra ID ready)
 - **Authorization**: Claims-based identity with role-based access control
 - **Styling**: Bootstrap 5.3 with Bootstrap Icons
@@ -97,12 +97,12 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 This training application follows an **offline-first architecture** with abstraction layers that enable seamless migration to Azure services:
 
 **Current Implementation (Training/Offline):**
-- **Database**: SQL Server LocalDB (offline development database)
+- **Database**: SQLite (offline development database)
 - **File Storage**: Local filesystem for any file-based features
 - **Authentication**: Cookie-based mock authentication
 
 **Production Migration Path:**
-- **Database**: Azure SQL Database (replace connection string, no code changes)
+- **Database**: Azure SQL Database (change the EF Core provider and connection configuration)
 - **File Storage**: Azure Blob Storage (swap `IFileStorageService` implementation)
 - **Authentication**: Microsoft Entra ID (replace authentication middleware)
 
@@ -138,7 +138,7 @@ public interface IFileStorageService
 ### Prerequisites
 
 - .NET 8.0 SDK or later
-- SQL Server LocalDB
+- No separate database server is required; SQLite stores the database in a local file.
 - Visual Studio 2022 or Visual Studio Code
 
 ### Quick Start
@@ -236,15 +236,15 @@ ContosoDashboard/
 
 ### Database Connection
 
-The default connection string in `appsettings.json` uses SQL Server LocalDB:
+The default connection string in `appsettings.json` uses a SQLite database file in the application's working directory:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=ContosoDashboard;Trusted_Connection=True;MultipleActiveResultSets=true"
+  "DefaultConnection": "Data Source=ContosoDashboard.db"
 }
 ```
 
-Update this if using a different SQL Server instance.
+The application creates and seeds this file on startup if it does not exist. The SQLite database and journal files are excluded from Git.
 
 ### Production Authentication Guidance
 
@@ -351,17 +351,16 @@ The application includes pre-seeded data for testing:
 
 ### Database Issues
 
-**Option 1: Recreate via LocalDB**
+**Recreate the SQLite database**
 
 ```powershell
-sqllocaldb stop mssqllocaldb
-sqllocaldb delete mssqllocaldb
+Remove-Item ContosoDashboard/ContosoDashboard.db
 # Then run the application - database will be recreated automatically
 ```
 
 **Option 2: Using EF Tools**
 
-- Delete database: `dotnet ef database drop --force`
+- Delete database: remove `ContosoDashboard.db` from the application directory
 - Recreate: Run application (auto-creates with seed data)
 
 **Note**: The application uses `EnsureCreated()` for development, so just running `dotnet run` will automatically create and seed the database if it doesn't exist.
