@@ -25,6 +25,18 @@ public class ProjectService : IProjectService
 
     public async Task<List<Project>> GetUserProjectsAsync(int userId)
     {
+        var isAdministrator = await _context.Users
+            .AnyAsync(u => u.UserId == userId && u.Role == UserRole.Administrator);
+        if (isAdministrator)
+        {
+            return await _context.Projects
+                .Include(p => p.ProjectManager)
+                .Include(p => p.Tasks)
+                .Include(p => p.ProjectMembers).ThenInclude(pm => pm.User)
+                .OrderByDescending(p => p.CreatedDate)
+                .ToListAsync();
+        }
+
         // Get projects where user is manager or a member
         var managedProjects = _context.Projects
             .Where(p => p.ProjectManagerId == userId);

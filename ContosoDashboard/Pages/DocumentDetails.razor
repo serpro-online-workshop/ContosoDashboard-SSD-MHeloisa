@@ -1,0 +1,55 @@
+@page "/documents/{DocumentId:guid}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using ContosoDashboard.Models
+@using ContosoDashboard.Services
+@inject IDocumentQueryService DocumentQueryService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Document Details</PageTitle>
+
+@if (Document == null)
+{
+    <div class="alert alert-warning" role="alert">Document not found or access denied.</div>
+}
+else
+{
+    <h1>@Document.Title</h1>
+    <p>@Document.Description</p>
+    <dl>
+        <dt>Category</dt>
+        <dd>@Document.Category</dd>
+        <dt>Uploaded</dt>
+        <dd>@Document.UploadedAtUtc.ToLocalTime().ToString("g")</dd>
+        <dt>Size</dt>
+        <dd>@FormatBytes(Document.SizeBytes)</dd>
+        <dt>File Name</dt>
+        <dd>@Document.OriginalFileName</dd>
+        <dt>Tags</dt>
+        <dd>@(Document.Tags.Count == 0 ? "No tags" : string.Join(", ", Document.Tags.Select(tag => tag.DisplayValue)))</dd>
+    </dl>
+    @if (Document.DetectedContentType is "application/pdf" or "image/jpeg" or "image/png")
+    {
+        <a href="@($"/document-content/{Document.DocumentId:D}?mode=inline")" class="btn btn-outline-primary">Preview</a>
+    }
+    <a href="@($"/document-content/{Document.DocumentId:D}?mode=download")" class="btn btn-primary">Download</a>
+}
+
+@code {
+    [Parameter] public Guid DocumentId { get; set; }
+    private Document? Document { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        Document = await DocumentQueryService.GetDocumentForUserAsync(DocumentId, auth.User);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        const long kb = 1024;
+        const long mb = kb * 1024;
+        if (bytes >= mb) return $"{bytes / (double)mb:0.##} MB";
+        if (bytes >= kb) return $"{bytes / (double)kb:0.##} KB";
+        return $"{bytes} B";
+    }
+}

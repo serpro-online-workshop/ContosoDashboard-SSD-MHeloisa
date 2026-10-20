@@ -29,6 +29,9 @@ public class Notification
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
+    // An identifier for navigation only; notifications never grant document access.
+    public Guid? RelatedDocumentId { get; set; }
+
     // Navigation properties
     [ForeignKey("UserId")]
     public virtual User User { get; set; } = null!;
@@ -42,7 +45,9 @@ public enum NotificationType
     TaskCompleted,
     TaskComment,
     ProjectUpdate,
-    SystemAnnouncement
+    SystemAnnouncement,
+    DocumentUploaded,
+    DocumentShared
 }
 
 public enum NotificationPriority

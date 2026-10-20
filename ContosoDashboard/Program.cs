@@ -1,23 +1,20 @@
-using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using ContosoDashboard.Data;
+using ContosoDashboard.Endpoints;
 using ContosoDashboard.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-
-// Add authentication state provider for Blazor
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-
-// Configure Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configure Mock Authentication (Cookie-based for training purposes)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -28,7 +25,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
     });
 
-// Add authorization
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("Employee", policy => policy.RequireRole("Employee", "TeamLead", "ProjectManager", "Administrator"));
@@ -37,35 +33,49 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Administrator", policy => policy.RequireRole("Administrator"));
 });
 
-// Register application services
+var documentOptions = new DocumentOptions();
+builder.Configuration.GetSection(DocumentOptions.SectionName).Bind(documentOptions);
+documentOptions.Validate();
+documentOptions.StorageRoot = DocumentOptions.ResolveAndValidateStorageRoot(
+    builder.Environment.ContentRootPath,
+    builder.Environment.WebRootPath ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot"),
+    documentOptions.StorageRoot);
+builder.Services.Configure<DocumentOptions>(options =>
+{
+    options.StorageRoot = documentOptions.StorageRoot;
+    options.ClamScanPath = documentOptions.ClamScanPath;
+    options.ScannerTimeoutSeconds = documentOptions.ScannerTimeoutSeconds;
+    options.MaxFileSizeBytes = documentOptions.MaxFileSizeBytes;
+    options.AllowedExtensions = documentOptions.AllowedExtensions;
+    options.AllowedContentTypes = documentOptions.AllowedContentTypes;
+});
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-
-// Add HttpContextAccessor for accessing user claims
+builder.Services.AddSingleton<IDocumentFileStorage, DocumentFileStorage>();
+builder.Services.AddSingleton<ILocalMalwareScanner, LocalClamAvScanner>();
+builder.Services.AddSingleton<IDocumentFileValidator, DocumentFileValidator>();
+builder.Services.AddScoped<IDocumentAuthorizationService, DocumentAuthorizationService>();
+builder.Services.AddScoped<IDocumentAuditService, DocumentAuditService>();
+builder.Services.AddScoped<IDocumentOperationRecoveryService, DocumentOperationRecoveryService>();
+builder.Services.AddScoped<IDocumentUploadService, DocumentUploadService>();
+builder.Services.AddScoped<IDocumentQueryService, DocumentQueryService>();
+builder.Services.AddScoped<DocumentDatabaseInitializer>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Initialize database
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.EnsureCreated(); // For development - use migrations in production
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred creating the database.");
-    }
+    var initializer = scope.ServiceProvider.GetRequiredService<DocumentDatabaseInitializer>();
+    await initializer.InitializeAsync();
+    var recovery = scope.ServiceProvider.GetRequiredService<IDocumentOperationRecoveryService>();
+    await recovery.ReconcileAsync();
 }
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -73,39 +83,32 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // Use HSTS even in development for training purposes
     app.UseHsts();
 }
 
-// Add security headers
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    
-    // Content Security Policy for Blazor Server
-    context.Response.Headers["Content-Security-Policy"] = 
-        "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-        "font-src 'self' https://cdn.jsdelivr.net; " +
-        "img-src 'self' data: https:; " +
-        "connect-src 'self' wss: ws:;";
-    
+    context.Response.Headers["Content-Security-Policy"] =
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; " +
+        "img-src 'self' data: https:; connect-src 'self' wss: ws:;";
     await next();
 });
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
-// Enable authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapDocumentContentEndpoint();
+
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
-
 app.Run();
+
+public partial class Program { }

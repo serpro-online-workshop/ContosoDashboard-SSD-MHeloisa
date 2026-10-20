@@ -22,7 +22,7 @@ completed in Polish after the P2 workflows it exercises are available.
 
 **Purpose**: Establish the dedicated feature test project and its layout.
 
-- [ ] T001 Create `ContosoDashboard.Tests/ContosoDashboard.Tests.csproj` targeting .NET 8 with xUnit, a project reference to `ContosoDashboard/ContosoDashboard.csproj`, and `Unit/`, `Integration/`, and `Web/` test folders.
+- [x] T001 Create `ContosoDashboard.Tests/ContosoDashboard.Tests.csproj` targeting .NET 8 with xUnit, a project reference to `ContosoDashboard/ContosoDashboard.csproj`, and `Unit/`, `Integration/`, and `Web/` test folders.
 
 ---
 
@@ -32,24 +32,24 @@ completed in Polish after the P2 workflows it exercises are available.
 operation recovery that every user story depends on. Do not start user-story implementation
 until this phase is complete.
 
-- [ ] T002 [P] Add the `Document` entity, field constraints, storage state, immutable uploader/upload time, optional project relationship, and application-managed version in `ContosoDashboard/Models/Document.cs`.
-- [ ] T003 [P] Add normalized, uniquely indexed document tags in `ContosoDashboard/Models/DocumentTag.cs`.
-- [ ] T004 [P] Add single-user-or-department read grants with grantor and timestamp fields in `ContosoDashboard/Models/DocumentShare.cs`.
-- [ ] T005 [P] Add the composite-key task/document link with actor and timestamp fields in `ContosoDashboard/Models/TaskDocumentAttachment.cs`.
-- [ ] T006 [P] Add append-only, non-content activity snapshots with no cascading document foreign key in `ContosoDashboard/Models/DocumentActivity.cs`.
-- [ ] T007 [P] Add journal operation kind/state, previous/candidate opaque storage keys, timestamps, and safe failure code fields in `ContosoDashboard/Models/DocumentFileOperation.cs`.
-- [ ] T008 Extend `ContosoDashboard/Models/Notification.cs` with a nullable document identifier and document-upload/share notification types without using notification links as entitlements.
-- [ ] T009 Add project-document and task-attachment navigation properties in `ContosoDashboard/Models/Project.cs` and `ContosoDashboard/Models/TaskItem.cs`.
-- [ ] T010 Map all document entities, required indexes and uniqueness checks, cascade rules for document-owned tags/grants/links, restrictive project deletion, and SQLite-compatible concurrency configuration in `ContosoDashboard/Data/ApplicationDbContext.cs`.
-- [ ] T011 Create an additive baseline migration for the complete existing `EnsureCreated` schema and a document-feature migration in `ContosoDashboard/Migrations/`; preserve seeded/existing data and include the generated model snapshot.
-- [ ] T012 Replace startup `EnsureCreated()` in `ContosoDashboard/Program.cs` with migration startup that validates and adopts only the complete known legacy schema, applies the baseline and feature migrations, and stops on unknown/partial schemas. Preserve `ContosoDashboard/ContosoDashboard.db`.
-- [ ] T013 Define validated storage-root and scanner settings, including rejecting any resolved storage location under `wwwroot`, in `ContosoDashboard/Services/DocumentOptions.cs` and `ContosoDashboard/appsettings.json`.
-- [ ] T014 [P] Implement opaque-key, same-volume staging/finalization, streaming storage, cleanup, and outside-static-root checks in `ContosoDashboard/Services/DocumentFileStorage.cs`.
-- [ ] T015 [P] Implement the local `clamscan` adapter with argument-safe process invocation, timeout, clean/detected/error outcomes, and fail-closed behavior in `ContosoDashboard/Services/LocalClamAvScanner.cs`.
-- [ ] T016 Implement current-principal document policy evaluation using live role, ownership, membership, department, and grant data, including deny-first revocation for an uploader removed from their project, in `ContosoDashboard/Services/DocumentAuthorizationService.cs`.
-- [ ] T017 Implement idempotent startup reconciliation and cleanup for interrupted file-operation journal entries in `ContosoDashboard/Services/DocumentOperationRecoveryService.cs`.
-- [ ] T018 Implement a non-content activity writer and typed event recording API in `ContosoDashboard/Services/DocumentAuditService.cs`.
-- [ ] T019 Register storage/scanner options, authorization, audit, and recovery services and invoke recovery after validated migrations in `ContosoDashboard/Program.cs`.
+- [x] T002 [P] Add the `Document` entity, field constraints, storage state, immutable uploader/upload time, optional project relationship, and application-managed version in `ContosoDashboard/Models/Document.cs`.
+- [x] T003 [P] Add normalized, uniquely indexed document tags in `ContosoDashboard/Models/DocumentTag.cs`.
+- [x] T004 [P] Add single-user-or-department read grants with grantor and timestamp fields in `ContosoDashboard/Models/DocumentShare.cs`.
+- [x] T005 [P] Add the composite-key task/document link with actor and timestamp fields in `ContosoDashboard/Models/TaskDocumentAttachment.cs`.
+- [x] T006 [P] Add append-only, non-content activity snapshots with no cascading document foreign key in `ContosoDashboard/Models/DocumentActivity.cs`.
+- [x] T007 [P] Add journal operation kind/state, previous/candidate opaque storage keys, timestamps, and safe failure code fields in `ContosoDashboard/Models/DocumentFileOperation.cs`.
+- [x] T008 Extend `ContosoDashboard/Models/Notification.cs` with a nullable document identifier and document-upload/share notification types without using notification links as entitlements.
+- [x] T009 Add project-document and task-attachment navigation properties in `ContosoDashboard/Models/Project.cs` and `ContosoDashboard/Models/TaskItem.cs`.
+- [x] T010 Map all document entities, required indexes and uniqueness checks, cascade rules for document-owned tags/grants/links, restrictive project deletion, and SQLite-compatible concurrency configuration in `ContosoDashboard/Data/ApplicationDbContext.cs`.
+- [x] T011 Create an additive baseline migration for the complete existing `EnsureCreated` schema and a document-feature migration in `ContosoDashboard/Migrations/`; preserve seeded/existing data and include the generated model snapshot.
+- [x] T012 Replace startup `EnsureCreated()` in `ContosoDashboard/Program.cs` with migration startup that validates and adopts only the complete known legacy schema, applies the baseline and feature migrations, and stops on unknown/partial schemas. Preserve `ContosoDashboard/ContosoDashboard.db`.
+- [x] T013 Define validated storage-root and scanner settings, including rejecting any resolved storage location under `wwwroot`, in `ContosoDashboard/Services/DocumentOptions.cs` and `ContosoDashboard/appsettings.json`.
+- [x] T014 [P] Implement opaque-key, same-volume staging/finalization, streaming storage, cleanup, and outside-static-root checks in `ContosoDashboard/Services/DocumentFileStorage.cs`.
+- [x] T015 [P] Implement the local `clamscan` adapter with argument-safe process invocation, timeout, clean/detected/error outcomes, and fail-closed behavior in `ContosoDashboard/Services/LocalClamAvScanner.cs`.
+- [x] T016 Implement current-principal document policy evaluation using live role, ownership, membership, department, and grant data, including deny-first revocation for an uploader removed from their project, in `ContosoDashboard/Services/DocumentAuthorizationService.cs`.
+- [x] T017 Implement idempotent startup reconciliation and cleanup for interrupted file-operation journal entries in `ContosoDashboard/Services/DocumentOperationRecoveryService.cs`.
+- [x] T018 Implement a non-content activity writer and typed event recording API in `ContosoDashboard/Services/DocumentAuditService.cs`.
+- [x] T019 Register storage/scanner options, authorization, audit, and recovery services and invoke recovery after validated migrations in `ContosoDashboard/Program.cs`.
 
 **Checkpoint**: The existing database is preserved and safely migrated; shared data, authorization,
 storage, scanning, audit, and recovery building blocks are ready.
@@ -68,15 +68,15 @@ not listed or retrievable.
 
 ### Tests for User Story 1
 
-- [ ] T020 [P] [US1] Add unit tests for required metadata, supported extensions/content families, empty/25-MiB/over-limit input, unsafe filenames, content mismatch, and scanner failure codes in `ContosoDashboard.Tests/Unit/DocumentUploadValidationTests.cs`.
-- [ ] T021 [P] [US1] Add SQLite/storage integration tests for independent batch results, denied project uploads, fail-closed scanner behavior, staged-write cleanup, and no visible metadata on failed upload in `ContosoDashboard.Tests/Integration/DocumentUploadWorkflowTests.cs`.
+- [x] T020 [P] [US1] Add unit tests for required metadata, supported extensions/content families, empty/25-MiB/over-limit input, unsafe filenames, content mismatch, and scanner failure codes in `ContosoDashboard.Tests/Unit/DocumentUploadValidationTests.cs`.
+- [x] T021 [P] [US1] Add SQLite/storage integration tests for independent batch results, denied project uploads, fail-closed scanner behavior, staged-write cleanup, and no visible metadata on failed upload in `ContosoDashboard.Tests/Integration/DocumentUploadWorkflowTests.cs`.
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Implement streamed size and extension/content validation with stable contract failure codes in `ContosoDashboard/Services/DocumentFileValidator.cs`.
-- [ ] T023 [US1] Implement independent sequential per-file upload processing in `ContosoDashboard/Services/DocumentUploadService.cs`; stream to staging, scan before publication, generate an opaque internal key, commit document/tags/audit/journal state only on success, clean or journal partial artifacts, and preserve successful sibling files.
-- [ ] T024 [US1] Add authenticated per-file metadata entry, eligible-project selection, visible byte progress, validation/results/retry text, and file reselection without reload in `ContosoDashboard/Pages/DocumentUpload.razor`.
-- [ ] T025 [US1] Register `IDocumentFileValidator` and `IDocumentUploadService` implementations and retain authenticated page routing in `ContosoDashboard/Program.cs`.
+- [x] T022 [US1] Implement streamed size and extension/content validation with stable contract failure codes in `ContosoDashboard/Services/DocumentFileValidator.cs`.
+- [x] T023 [US1] Implement independent sequential per-file upload processing in `ContosoDashboard/Services/DocumentUploadService.cs`; stream to staging, scan before publication, generate an opaque internal key, commit document/tags/audit/journal state only on success, clean or journal partial artifacts, and preserve successful sibling files.
+- [x] T024 [US1] Add authenticated per-file metadata entry, eligible-project selection, visible byte progress, validation/results/retry text, and file reselection without reload in `ContosoDashboard/Pages/DocumentUpload.razor`.
+- [x] T025 [US1] Register `IDocumentFileValidator` and `IDocumentUploadService` implementations and retain authenticated page routing in `ContosoDashboard/Program.cs`.
 
 **Checkpoint**: A valid upload succeeds and is private; every failed item reports its own outcome
 without publishing partial content.
@@ -95,17 +95,17 @@ stale direct references.
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Add query tests proving current entitlement filtering precedes search, counts, suggestions, filters, and sort, including project-removal revocation and role-scope boundaries, in `ContosoDashboard.Tests/Unit/DocumentQueryAuthorizationTests.cs`.
-- [ ] T027 [P] [US2] Add authenticated/unauthenticated endpoint tests for GUID validation, uniform not-found/denied/pending/deleted responses, content disposition, canonical type, `nosniff`, inline allow-list, and streamed bytes in `ContosoDashboard.Tests/Web/DocumentContentEndpointTests.cs`.
+- [x] T026 [P] [US2] Add query tests proving current entitlement filtering precedes search, counts, suggestions, filters, and sort, including project-removal revocation and role-scope boundaries, in `ContosoDashboard.Tests/Unit/DocumentQueryAuthorizationTests.cs`.
+- [x] T027 [P] [US2] Add authenticated/unauthenticated endpoint tests for GUID validation, uniform not-found/denied/pending/deleted responses, content disposition, canonical type, `nosniff`, inline allow-list, and streamed bytes in `ContosoDashboard.Tests/Web/DocumentContentEndpointTests.cs`.
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Implement permission-first library/search/filter/sort queries and authorized metadata lookup with inclusive displayed-date filtering in `ContosoDashboard/Services/DocumentQueryService.cs`.
-- [ ] T029 [US2] Implement `GET /document-content/{documentId}` using a canonical GUID, current service authorization on every request, streaming of the current object only, inline PDF/JPEG/PNG or download mode, safely encoded original filename, and uniform no-leak errors in `ContosoDashboard/Endpoints/DocumentContentEndpoint.cs`.
-- [ ] T030 [US2] Implement the authenticated `/documents` library with My Documents, Project Documents, Shared with Me, search, sort, filters, counts, loading/empty/error states, labels, keyboard controls, and visible focus in `ContosoDashboard/Pages/Documents.razor`.
-- [ ] T031 [US2] Implement the authenticated `/documents/{documentId:guid}` metadata/details view with reauthorization and download/preview actions in `ContosoDashboard/Pages/DocumentDetails.razor`.
-- [ ] T032 [P] [US2] Add the Documents navigation link to the existing navigation shell in `ContosoDashboard/Shared/NavMenu.razor`.
-- [ ] T033 [US2] Register the query service and map the content endpoint before static/fallback routing in `ContosoDashboard/Program.cs`; verify content is never served by static-file middleware.
+- [x] T028 [US2] Implement permission-first library/search/filter/sort queries and authorized metadata lookup with inclusive displayed-date filtering in `ContosoDashboard/Services/DocumentQueryService.cs`.
+- [x] T029 [US2] Implement `GET /document-content/{documentId}` using a canonical GUID, current service authorization on every request, streaming of the current object only, inline PDF/JPEG/PNG or download mode, safely encoded original filename, and uniform no-leak errors in `ContosoDashboard/Endpoints/DocumentContentEndpoint.cs`.
+- [x] T030 [US2] Implement the authenticated `/documents` library with My Documents, Project Documents, Shared with Me, search, sort, filters, counts, loading/empty/error states, labels, keyboard controls, and visible focus in `ContosoDashboard/Pages/Documents.razor`.
+- [x] T031 [US2] Implement the authenticated `/documents/{documentId:guid}` metadata/details view with reauthorization and download/preview actions in `ContosoDashboard/Pages/DocumentDetails.razor`.
+- [x] T032 [P] [US2] Add the Documents navigation link to the existing navigation shell in `ContosoDashboard/Shared/NavMenu.razor`.
+- [x] T033 [US2] Register the query service and map the content endpoint before static/fallback routing in `ContosoDashboard/Program.cs`; verify content is never served by static-file middleware.
 
 **Checkpoint**: A user can locate only currently readable documents; every direct content request
 rechecks authorization and cannot disclose denied metadata or bytes.
@@ -126,13 +126,13 @@ integrate speech software or perform screen-reader-specific tests.
 
 ### Tests for User Story 8
 
-- [ ] T034 [P] [US8] Add configuration tests that require local storage/scanner settings, reject a storage root under `wwwroot`, and do not rely on cloud/network services in `ContosoDashboard.Tests/Unit/OfflineDocumentConfigurationTests.cs`.
+- [x] T034 [P] [US8] Add configuration tests that require local storage/scanner settings, reject a storage root under `wwwroot`, and do not rely on cloud/network services in `ContosoDashboard.Tests/Unit/OfflineDocumentConfigurationTests.cs`.
 - [ ] T035 [P] [US8] Define the full disconnected-network and keyboard-only walkthrough for upload, find, share, preview, replacement, and deletion, with expected focus and visible-text states, in `ContosoDashboard.Tests/Web/DocumentUsabilityAcceptance.md`; execute after US3–US5 are available.
 
 ### Implementation for User Story 8
 
-- [ ] T036 [US8] Add local ClamAV and storage prerequisites, training-only/non-production wording, and offline launch guidance to `README.md` without adding network signature downloads or any production-readiness claim.
-- [ ] T037 [US8] Complete and record labels, logical focus order, visible focus, non-color text status, and loading/empty/success/error/denied feedback for the upload and library/details pages in `ContosoDashboard/Pages/DocumentUpload.razor` and `ContosoDashboard/Pages/Documents.razor`.
+- [x] T036 [US8] Add local ClamAV and storage prerequisites, training-only/non-production wording, and offline launch guidance to `README.md` without adding network signature downloads or any production-readiness claim.
+- [x] T037 [US8] Complete and record labels, logical focus order, visible focus, non-color text status, and loading/empty/success/error/denied feedback for the upload and library/details pages in `ContosoDashboard/Pages/DocumentUpload.razor` and `ContosoDashboard/Pages/Documents.razor`.
 
 **Checkpoint**: The acceptance procedure is defined here; its full journey completion gate is
 verified after US3–US5 are available and again in Polish. Screen-reader-specific work remains

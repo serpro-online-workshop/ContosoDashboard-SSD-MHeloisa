@@ -1,0 +1,218 @@
+@page "/documents"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using System.Security.Claims
+@using ContosoDashboard.Models
+@using ContosoDashboard.Services
+@inject IDocumentQueryService DocumentQueryService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Documents</PageTitle>
+<h1>Documents</h1>
+<p>Training-only local document library.</p>
+<p><a class="btn btn-primary" href="/documents/upload">Upload documents</a></p>
+
+<EditForm Model="this" OnSubmit="ApplyFiltersAsync" class="border rounded p-3 mb-4">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label for="document-search">Search accessible documents</label>
+            <InputText id="document-search" class="form-control" @bind-Value="SearchText" />
+        </div>
+        <div class="col-md-3">
+            <label for="document-scope">Library section</label>
+            <InputSelect id="document-scope" class="form-select" @bind-Value="Scope">
+                <option value="@DocumentLibraryScope.AllAccessible">All accessible</option>
+                <option value="@DocumentLibraryScope.MyDocuments">My Documents</option>
+                <option value="@DocumentLibraryScope.ProjectDocuments">Project Documents</option>
+                <option value="@DocumentLibraryScope.SharedWithMe">Shared with Me</option>
+            </InputSelect>
+        </div>
+        <div class="col-md-3">
+            <label for="document-category">Category</label>
+            <InputSelect id="document-category" class="form-select" @bind-Value="Category">
+                <option value="">All categories</option>
+                @foreach (var value in Enum.GetValues<DocumentCategory>())
+                {
+                    <option value="@value">@CategoryLabel(value)</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-3">
+            <label for="document-project">Project</label>
+            <InputSelect id="document-project" class="form-select" @bind-Value="ProjectId">
+                <option value="">All projects</option>
+                @foreach (var project in ProjectChoices)
+                {
+                    <option value="@project.ProjectId">@project.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-3">
+            <label for="uploaded-from">Uploaded from</label>
+            <InputDate id="uploaded-from" class="form-control" @bind-Value="UploadedFrom" />
+        </div>
+        <div class="col-md-3">
+            <label for="uploaded-through">Uploaded through</label>
+            <InputDate id="uploaded-through" class="form-control" @bind-Value="UploadedThrough" />
+        </div>
+        <div class="col-md-3">
+            <label for="document-sort">Sort by</label>
+            <InputSelect id="document-sort" class="form-select" @bind-Value="SortBy">
+                <option value="title">Title</option>
+                <option value="uploaded">Upload date</option>
+                <option value="category">Category</option>
+                <option value="size">File size</option>
+            </InputSelect>
+        </div>
+        <div class="col-md-3">
+            <label for="sort-direction">Direction</label>
+            <InputSelect id="sort-direction" class="form-select" @bind-Value="Descending">
+                <option value="true">Descending</option>
+                <option value="false">Ascending</option>
+            </InputSelect>
+        </div>
+    </div>
+    @if (!string.IsNullOrEmpty(ValidationMessage))
+    {
+        <p class="text-danger mt-2" role="alert">@ValidationMessage</p>
+    }
+    <button class="btn btn-secondary mt-3" type="submit" disabled="@IsLoading">Apply filters</button>
+</EditForm>
+
+<p aria-live="polite" role="status">
+    @if (IsLoading) { <span>Loading accessible documents…</span> }
+    else { <span>@DocumentList.Count accessible document(s).</span> }
+</p>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+}
+else if (!IsLoading && DocumentList.Count == 0)
+{
+    <div class="alert alert-secondary" role="status">No documents match these filters in the documents you can access.</div>
+}
+else if (!IsLoading)
+{
+    <div class="table-responsive">
+        <table class="table table-striped" aria-label="Accessible documents">
+            <thead>
+                <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Project</th>
+                    <th scope="col">Uploaded</th>
+                    <th scope="col">Size</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var document in DocumentList)
+                {
+                    <tr>
+                        <td><a href="@($"/documents/{document.DocumentId:D}")">@document.Title</a></td>
+                        <td>@CategoryLabel(document.Category)</td>
+                        <td>@(document.Project?.Name ?? "Personal")</td>
+                        <td>@document.UploadedAtUtc.ToLocalTime().ToString("g")</td>
+                        <td>@FormatBytes(document.SizeBytes)</td>
+                        <td>
+                            @if (document.DetectedContentType is "application/pdf" or "image/jpeg" or "image/png")
+                            {
+                                <a href="@($"/document-content/{document.DocumentId:D}?mode=inline")">Preview</a>
+                                <span aria-hidden="true"> · </span>
+                            }
+                            <a href="@($"/document-content/{document.DocumentId:D}?mode=download")">Download</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<Document> DocumentList { get; set; } = [];
+    private List<Project> ProjectChoices { get; set; } = [];
+    private string SearchText { get; set; } = string.Empty;
+    private DocumentLibraryScope Scope { get; set; } = DocumentLibraryScope.AllAccessible;
+    private DocumentCategory? Category { get; set; }
+    private int? ProjectId { get; set; }
+    private DateTime? UploadedFrom { get; set; }
+    private DateTime? UploadedThrough { get; set; }
+    private string SortBy { get; set; } = "uploaded";
+    private bool Descending { get; set; } = true;
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+    private string? ValidationMessage { get; set; }
+    private ClaimsPrincipal _principal = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _principal = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        try
+        {
+            var accessible = await DocumentQueryService.GetAccessibleDocumentsAsync(_principal);
+            ProjectChoices = accessible.Where(d => d.Project is not null).Select(d => d.Project!)
+                .DistinctBy(p => p.ProjectId).OrderBy(p => p.Name).ToList();
+            DocumentList = accessible;
+        }
+        catch
+        {
+            ErrorMessage = "The accessible document list could not be loaded. Try again.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        ValidationMessage = null;
+        ErrorMessage = null;
+        if (UploadedFrom.HasValue && UploadedThrough.HasValue && UploadedFrom.Value.Date > UploadedThrough.Value.Date)
+        {
+            ValidationMessage = "The start date must be on or before the end date.";
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            DocumentList = await DocumentQueryService.GetAccessibleDocumentsAsync(_principal, new DocumentLibraryQuery
+            {
+                Search = SearchText,
+                Scope = Scope,
+                Category = Category,
+                ProjectId = ProjectId,
+                UploadedFrom = UploadedFrom,
+                UploadedThrough = UploadedThrough,
+                SortBy = SortBy,
+                Descending = Descending
+            });
+        }
+        catch
+        {
+            ErrorMessage = "The document search could not be completed. Try again.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string CategoryLabel(DocumentCategory category) => category switch
+    {
+        DocumentCategory.ProjectDocuments => "Project Documents",
+        DocumentCategory.TeamResources => "Team Resources",
+        DocumentCategory.PersonalFiles => "Personal Files",
+        _ => category.ToString()
+    };
+
+    private static string FormatBytes(long bytes)
+    {
+        const long kb = 1024;
+        const long mb = 1024 * kb;
+        return bytes >= mb ? $"{bytes / (double)mb:0.##} MB" :
+            bytes >= kb ? $"{bytes / (double)kb:0.##} KB" : $"{bytes} B";
+    }
+}

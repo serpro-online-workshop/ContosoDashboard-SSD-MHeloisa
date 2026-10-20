@@ -1,0 +1,228 @@
+@page "/documents/upload"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using System.Security.Claims
+@using ContosoDashboard.Models
+@using ContosoDashboard.Services
+@inject IDocumentUploadService DocumentUploadService
+@inject IProjectService ProjectService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Upload Documents</PageTitle>
+<h1>Upload documents</h1>
+<p>Training-only local document storage. Every file is checked by the required local malware scanner.</p>
+
+@if (!string.IsNullOrWhiteSpace(StatusMessage))
+{
+    <p role="status" aria-live="polite" class="alert @StatusClass">@StatusMessage</p>
+}
+
+<div class="mb-3">
+    <label for="document-files" class="form-label">Choose one or more files</label>
+    <InputFile @key="FileInputVersion" id="document-files" class="form-control" OnChange="HandleFilesSelected" multiple />
+</div>
+
+@if (UploadItems.Count > 0)
+{
+    <h2 class="h4">File details</h2>
+    <p>Enter a separate title, category, optional description, tags, and project for each file.</p>
+    @foreach (var item in UploadItems)
+    {
+        <fieldset class="border rounded p-3 mb-3" @key="item.File">
+            <legend class="h5">@item.File.Name</legend>
+            <div class="mb-2">
+                <label for="@($"title-{item.Index}")">Title (required)</label>
+                <InputText id="@($"title-{item.Index}")" class="form-control" @bind-Value="item.Title" maxlength="255" />
+            </div>
+            <div class="mb-2">
+                <label for="@($"category-{item.Index}")">Category (required)</label>
+                <InputSelect id="@($"category-{item.Index}")" class="form-select" @bind-Value="item.Category">
+                    @foreach (var category in Enum.GetValues<DocumentCategory>())
+                    {
+                        <option value="@category">@CategoryLabel(category)</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-2">
+                <label for="@($"description-{item.Index}")">Description (optional)</label>
+                <InputTextArea id="@($"description-{item.Index}")" class="form-control" @bind-Value="item.Description" maxlength="2000" />
+            </div>
+            <div class="mb-2">
+                <label for="@($"tags-{item.Index}")">Tags (optional, comma separated)</label>
+                <InputText id="@($"tags-{item.Index}")" class="form-control" @bind-Value="item.TagsText" />
+            </div>
+            <div class="mb-2">
+                <label for="@($"project-{item.Index}")">Project (optional)</label>
+                <InputSelect id="@($"project-{item.Index}")" class="form-select" @bind-Value="item.ProjectId">
+                    <option value="">Personal / no project</option>
+                    @foreach (var project in EligibleProjects)
+                    {
+                        <option value="@project.ProjectId">@project.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            @if (IsUploading && item.BytesWritten > 0)
+            {
+                <progress class="w-100" max="@Math.Max(item.File.Size, 1)" value="@Math.Min(item.BytesWritten, item.File.Size)"
+                          aria-label="@($"Upload progress for {item.File.Name}")"></progress>
+                <p>@item.BytesWritten of @item.File.Size bytes written.</p>
+            }
+            @if (!string.IsNullOrEmpty(item.Outcome))
+            {
+                <p role="status" class="alert @(item.Succeeded ? "alert-success" : "alert-danger")">
+                    @item.File.Name: @item.Outcome
+                </p>
+            }
+        </fieldset>
+    }
+    <button type="button" class="btn btn-primary" @onclick="UploadFilesAsync" disabled="@IsUploading">
+        @(IsUploading ? "Uploading files…" : "Upload selected files")
+    </button>
+    @if (!IsUploading)
+    {
+        <button type="button" class="btn btn-secondary ms-2" @onclick="ChooseAnotherBatch">Choose another batch</button>
+    }
+}
+
+@code {
+    private readonly List<UploadItem> UploadItems = [];
+    private readonly List<Project> EligibleProjects = [];
+    private bool IsUploading;
+    private string? StatusMessage;
+    private string StatusClass = "alert-info";
+    private int FileInputVersion;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (TryGetUserId(auth.User, out var userId))
+        {
+            try
+            {
+                EligibleProjects.AddRange(await ProjectService.GetUserProjectsAsync(userId));
+            }
+            catch
+            {
+                // No project choices are offered if the authorized project lookup fails.
+                StatusMessage = "Project choices could not be loaded. You can still upload personal documents.";
+                StatusClass = "alert-warning";
+            }
+        }
+    }
+
+    private void HandleFilesSelected(InputFileChangeEventArgs args)
+    {
+        UploadItems.Clear();
+        var files = args.GetMultipleFiles(100);
+        for (var index = 0; index < files.Count; index++)
+            UploadItems.Add(new UploadItem(index, files[index]));
+        StatusMessage = files.Count == 0 ? "No files selected." : $"{files.Count} file(s) ready for individual details.";
+        StatusClass = "alert-info";
+    }
+
+    private async Task UploadFilesAsync()
+    {
+        if (UploadItems.Count == 0) return;
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (auth.User.Identity?.IsAuthenticated != true)
+        {
+            StatusMessage = "Sign in to upload documents.";
+            StatusClass = "alert-danger";
+            return;
+        }
+
+        IsUploading = true;
+        StatusMessage = "Each file is processed independently; the local malware scan must succeed.";
+        StatusClass = "alert-info";
+        await InvokeAsync(StateHasChanged);
+
+        foreach (var item in UploadItems)
+        {
+            item.Outcome = null;
+            item.BytesWritten = 0;
+            if (string.IsNullOrWhiteSpace(item.Title))
+            {
+                item.Outcome = "Failure: enter a title before uploading this file.";
+                item.Succeeded = false;
+                continue;
+            }
+
+            try
+            {
+                await using var stream = item.File.OpenReadStream(DocumentOptions.MaximumFileSizeBytes);
+                var progress = new Progress<long>(bytes =>
+                {
+                    item.BytesWritten = bytes;
+                    _ = InvokeAsync(StateHasChanged);
+                });
+                var request = new UploadRequest
+                {
+                    Title = item.Title,
+                    Category = item.Category,
+                    Description = item.Description,
+                    Tags = item.TagsText.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                    ProjectId = item.ProjectId,
+                    FileName = item.File.Name,
+                    DeclaredContentType = item.File.ContentType,
+                    Payload = stream,
+                    Progress = progress
+                };
+
+                var result = await DocumentUploadService.UploadAsync(request, auth.User);
+                item.Succeeded = result.Success;
+                item.Outcome = result.Success
+                    ? "Uploaded successfully."
+                    : $"Failure ({result.ErrorCode}): {result.Message}";
+            }
+            catch (IOException)
+            {
+                item.Succeeded = false;
+                item.Outcome = "Failure (size-exceeded): the file exceeds the 25 MiB limit. Select a smaller file to retry.";
+            }
+            catch (Exception)
+            {
+                item.Succeeded = false;
+                item.Outcome = "Failure (storage-failure): this file could not be uploaded. Retry this file; other results are unchanged.";
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+
+        var succeeded = UploadItems.Count(i => i.Succeeded);
+        var failed = UploadItems.Count - succeeded;
+        StatusMessage = $"{succeeded} file(s) succeeded; {failed} file(s) failed. Review each file result and retry by selecting files again.";
+        StatusClass = failed == 0 ? "alert-success" : succeeded == 0 ? "alert-danger" : "alert-warning";
+        IsUploading = false;
+    }
+
+    private void ChooseAnotherBatch()
+    {
+        UploadItems.Clear();
+        FileInputVersion++;
+        StatusMessage = "Choose another file or batch. No page reload is needed.";
+        StatusClass = "alert-info";
+    }
+
+    private static bool TryGetUserId(ClaimsPrincipal principal, out int userId) =>
+        int.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out userId) && userId > 0;
+
+    private static string CategoryLabel(DocumentCategory category) => category switch
+    {
+        DocumentCategory.ProjectDocuments => "Project Documents",
+        DocumentCategory.TeamResources => "Team Resources",
+        DocumentCategory.PersonalFiles => "Personal Files",
+        _ => category.ToString()
+    };
+
+    private sealed class UploadItem(int index, IBrowserFile file)
+    {
+        public int Index { get; } = index;
+        public IBrowserFile File { get; } = file;
+        public string Title { get; set; } = Path.GetFileNameWithoutExtension(file.Name);
+        public string? Description { get; set; }
+        public DocumentCategory Category { get; set; } = DocumentCategory.Other;
+        public string TagsText { get; set; } = string.Empty;
+        public int? ProjectId { get; set; }
+        public long BytesWritten { get; set; }
+        public string? Outcome { get; set; }
+        public bool Succeeded { get; set; }
+    }
+}

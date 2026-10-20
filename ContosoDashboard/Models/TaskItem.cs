@@ -46,6 +46,7 @@ public class TaskItem
     public virtual Project? Project { get; set; }
 
     public virtual ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
+    public virtual ICollection<TaskDocumentAttachment> DocumentAttachments { get; set; } = new List<TaskDocumentAttachment>();
 }
 
 public enum TaskPriority

@@ -78,6 +78,7 @@ ContosoDashboard is built using ASP.NET Core 8.0 with Blazor Server and provides
 - **Data Models**: Complete entity framework models for Users, Tasks, Projects, Notifications, and Announcements
 - **Business Services**: Service layer for all core functionality (Tasks, Projects, Users, Notifications, Dashboard)
 - **Database Context**: EF Core DbContext with relationships, indexes, and seed data
+- **Private document library (MVP)**: per-file metadata, locally scanned uploads, permission-filtered search, preview, and download using generated storage keys outside `wwwroot`
 
 ### 🔧 Technical Stack
 
@@ -159,7 +160,34 @@ public interface IFileStorageService
 
 4. **Login** - Select any user from the dropdown (no password required)
 
-The application automatically creates and seeds the database on first run with sample users, projects, tasks, and announcements.
+The application applies additive EF Core migrations. A complete known legacy `EnsureCreated` database is validated and adopted without resetting its contents; fresh databases apply the baseline and feature migrations. Unknown or partial schemas stop with an actionable error instead of being stamped or recreated. The existing `ContosoDashboard.db` is not deleted or reset.
+
+### Local document management (MVP)
+
+Document upload and retrieval remain local and training-only. Before uploading, provision a real
+ClamAV installation with a usable local signature database. The application does not download
+signatures or call a hosted scanner. If `clamscan` is absent, times out, reports an error, or
+detects a threat, the upload fails closed and no document becomes available.
+
+The default storage root is `ContosoDashboard/App_Data/Documents`, outside `wwwroot`. Configure
+`DocumentStorage:StorageRoot` and `DocumentStorage:ClamScanPath` in local configuration when
+needed; the application rejects a storage path that resolves inside the static-file root. Stored
+objects use generated opaque names, while the original safe filename is retained only as display
+and download metadata.
+
+Build and run the MVP and its targeted automated tests from the repository root:
+
+```sh
+dotnet restore ContosoDashboard.Tests/ContosoDashboard.Tests.csproj
+dotnet test ContosoDashboard.Tests/ContosoDashboard.Tests.csproj
+dotnet build ContosoDashboard/ContosoDashboard.csproj
+dotnet run --project ContosoDashboard/ContosoDashboard.csproj
+```
+
+The current MVP covers setup, persistence/storage/scanning/authorization foundations, safe upload,
+and authorized document discovery/content delivery. Sharing, task/project attachment workflows,
+document replacement/deletion, dashboard notifications, administrator reports, and full
+cross-journey acceptance remain later feature work.
 
 ### Testing Security Features
 

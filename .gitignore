@@ -61,6 +61,8 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+ContosoDashboard/App_Data/Documents/
+ContosoDashboard/App_Data/Documents/**
 
 # StyleCop
 StyleCopReport.xml

@@ -17,11 +17,21 @@ public class ApplicationDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<ProjectMember> ProjectMembers { get; set; } = null!;
     public DbSet<Announcement> Announcements { get; set; } = null!;
+    public DbSet<Document> Documents { get; set; } = null!;
+    public DbSet<DocumentTag> DocumentTags { get; set; } = null!;
+    public DbSet<DocumentShare> DocumentShares { get; set; } = null!;
+    public DbSet<TaskDocumentAttachment> TaskDocumentAttachments { get; set; } = null!;
+    public DbSet<DocumentActivity> DocumentActivities { get; set; } = null!;
+    public DbSet<DocumentFileOperation> DocumentFileOperations { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        ConfigureModel(modelBuilder);
+    }
 
+    public static void ConfigureModel(ModelBuilder modelBuilder)
+    {
         // Configure User relationships
         modelBuilder.Entity<User>()
             .HasMany(u => u.AssignedTasks)
@@ -64,11 +74,61 @@ public class ApplicationDbContext : DbContext
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        modelBuilder.Entity<Document>(entity =>
+        {
+            entity.HasKey(d => d.DocumentId);
+            entity.HasIndex(d => d.StorageKey).IsUnique();
+            entity.HasIndex(d => new { d.UploaderUserId, d.UploadedAtUtc });
+            entity.HasIndex(d => new { d.ProjectId, d.UploadedAtUtc });
+            entity.Property(d => d.Version).IsConcurrencyToken();
+            entity.HasOne(d => d.Uploader).WithMany().HasForeignKey(d => d.UploaderUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.Project).WithMany(p => p.Documents).HasForeignKey(d => d.ProjectId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<DocumentTag>(entity =>
+        {
+            entity.HasKey(t => t.DocumentTagId);
+            entity.HasIndex(t => new { t.DocumentId, t.NormalizedValue }).IsUnique();
+            entity.HasOne(t => t.Document).WithMany(d => d.Tags).HasForeignKey(t => t.DocumentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DocumentShare>(entity =>
+        {
+            entity.HasKey(s => s.DocumentShareId);
+            entity.HasIndex(s => new { s.DocumentId, s.RecipientUserId }).IsUnique();
+            entity.HasIndex(s => new { s.DocumentId, s.Department }).IsUnique();
+            entity.ToTable(t => t.HasCheckConstraint("CK_DocumentShares_ExactlyOneRecipient",
+                "(RecipientUserId IS NOT NULL AND Department IS NULL) OR (RecipientUserId IS NULL AND Department IS NOT NULL AND length(trim(Department)) > 0)"));
+            entity.HasOne(s => s.Document).WithMany(d => d.Shares).HasForeignKey(s => s.DocumentId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(s => s.RecipientUser).WithMany().HasForeignKey(s => s.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(s => s.GrantedByUser).WithMany().HasForeignKey(s => s.GrantedByUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TaskDocumentAttachment>(entity =>
+        {
+            entity.HasKey(a => new { a.TaskId, a.DocumentId });
+            entity.HasOne(a => a.Task).WithMany(t => t.DocumentAttachments).HasForeignKey(a => a.TaskId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(a => a.Document).WithMany(d => d.TaskAttachments).HasForeignKey(a => a.DocumentId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DocumentActivity>(entity =>
+        {
+            entity.HasKey(a => a.DocumentActivityId);
+            entity.HasIndex(a => a.OccurredAtUtc);
+            entity.HasIndex(a => a.DocumentReferenceId);
+        });
+
+        modelBuilder.Entity<DocumentFileOperation>(entity =>
+        {
+            entity.HasKey(o => o.DocumentFileOperationId);
+            entity.HasIndex(o => new { o.State, o.UpdatedAtUtc });
+        });
+
         // Seed initial data
         SeedData(modelBuilder);
     }
 
-    private void SeedData(ModelBuilder modelBuilder)
+    private static void SeedData(ModelBuilder modelBuilder)
     {
         // Seed an admin user
         modelBuilder.Entity<User>().HasData(
