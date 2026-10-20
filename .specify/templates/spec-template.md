@@ -74,6 +74,9 @@
 
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
+- For protected data, consider unauthenticated, unauthorized, and non-owner access.
+- For local features, consider behavior without network or external services.
+- For user-facing flows, consider keyboard use, empty/loading states, and validation errors.
 
 ## Requirements *(mandatory)*
 
@@ -83,6 +86,10 @@
 -->
 
 ### Functional Requirements
+
+Requirements MUST be specific and verifiable. When a feature affects protected data, state the
+applicable roles, ownership or membership rules, and denied-access behavior. When it affects
+offline operation or external integrations, state the expected local behavior and dependencies.
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
 - **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  

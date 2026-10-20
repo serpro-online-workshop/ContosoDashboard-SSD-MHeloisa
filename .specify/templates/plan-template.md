@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This template is filled in by the repository's `/speckit.plan` workflow.
 
 ## Summary
 
@@ -31,7 +31,21 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **Training/offline scope**: Confirm the feature preserves the local, offline training path,
+  or document the approved scope change and offline alternative.
+- **Authorization/data boundaries**: For protected data, identify enforcement at UI and
+  service/data boundaries and specify permitted and denied-access scenarios; otherwise state
+  why this gate is not applicable.
+- **Layered design**: Confirm the design fits the existing Blazor pages, services, models, and
+  EF Core data access, or justify the deviation.
+- **Usability/accessibility**: Identify applicable keyboard, focus, labeling, and state-feedback
+  requirements; otherwise state why this gate is not applicable.
+- **Verification/traceability**: Map acceptance criteria to implementation and automated test
+  tasks. If automation is infeasible, explain why and define repeatable alternative validation.
+
+Record each gate as **PASS**, **FAIL**, or **N/A** with a reason. Resolve failures before
+implementation, or document an explicit exception, rationale, and mitigation in Complexity
+Tracking.
 
 ## Project Structure
 
