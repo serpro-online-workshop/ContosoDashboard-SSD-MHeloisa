@@ -21,6 +21,7 @@ application, not a production document repository.
 - Q: How should filenames containing ordinary special characters be handled? → A: Preserve the original filename for display and download, while using a safe internal storage name that cannot interpret it as a path.
 - Q: What happens when a shared document is permanently deleted? → A: Permanently remove its content, metadata, shares, and task links; revoke recipient access, including through stale links.
 - Q: What happens if storage fills during an upload? → A: Report a per-file failure with retry guidance, expose no partial document, clean partial artifacts, preserve independently successful files, and leave the previous file intact on replacement.
+- Q: Are speech software and screen-reader-specific requirements and tests in scope? → A: No. Do not install or integrate text-to-speech or screen-reader software, and exclude screen-reader-specific requirements and tests. Retain keyboard operation, visible focus, clear labels, and visual text feedback; do not deliberately disable native compatibility.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -174,7 +175,7 @@ and complete upload, find, share, preview, replacement, and deletion using only 
 
 1. **Given** the local training environment and its malware-checking prerequisite are ready, **When** external networking is unavailable, **Then** all document journeys and in-app notifications still work without cloud accounts.
 2. **Given** a keyboard-only user, **When** they operate document pages and dialogs, **Then** every control has a clear label, visible focus, logical focus order, and no keyboard trap.
-3. **Given** loading, an empty library, upload progress, validation failure, success, or access denial, **When** that state occurs, **Then** it is conveyed in understandable text and is available to assistive technology without relying on color alone.
+3. **Given** loading, an empty library, upload progress, validation failure, success, or access denial, **When** that state occurs, **Then** it is conveyed in visible, understandable text without relying on color alone.
 
 ### Edge Cases
 
@@ -224,7 +225,7 @@ and complete upload, find, share, preview, replacement, and deletion using only 
 - **FR-024**: The system MUST record successful uploads, replacements, metadata edits, downloads, previews, deletions, and share additions/removals with actor, time, document reference, and action. Deleted content MUST NOT be retained in the audit.
 - **FR-025**: Only administrators MUST be able to review activity records and generate date-range reports showing upload counts by file type, uploader rankings, and access counts by user and document, including zero-result states.
 - **FR-026**: Core document journeys, malware checking, reporting, and notifications MUST work using local resources without internet access or cloud accounts. User guidance MUST identify this as training-only and not production-ready.
-- **FR-027**: Document journeys MUST provide labeled, keyboard-operable controls, visible focus, accessible status/progress feedback, understandable validation messages, and loading, success, error, and empty states.
+- **FR-027**: Document journeys MUST provide labeled, keyboard-operable controls, visible focus, visible textual status/progress feedback, understandable validation messages, and loading, success, error, and empty states. Installing or integrating text-to-speech or screen-reader software and screen-reader-specific requirements and tests are out of scope. Native browser compatibility MUST NOT be deliberately disabled.
 - **FR-028**: Concurrent edits, replacement, and deletion MUST NOT restore deleted content or silently publish a partial result. A conflicting operation MUST either complete consistently or fail with an actionable retry message.
 - **FR-029**: Project deletion MUST be blocked while any documents remain associated with that project. Each associated document MUST be explicitly permanently deleted before project deletion may proceed; deleting a project MUST NOT implicitly delete its documents.
 
@@ -344,7 +345,8 @@ global document access.
   batch files remain available, and no failed replacement destroys the previous file.
 - **SC-007**: Every primary journey passes with external networking disconnected and with
   keyboard-only operation; every required loading, empty, progress, error, and success state
-  has understandable text available to assistive technology.
+  has visible, understandable text. Screen-reader-specific tests and speech output are excluded;
+  keyboard, focus, labels, and visual feedback remain acceptance criteria.
 - **SC-008**: Audit reports exactly reconcile with a known set of upload and access events,
   including activity for deleted documents, and all non-administrator report requests are denied.
 - **SC-009**: In a three-month stakeholder pilot, at least 70% of active dashboard users upload

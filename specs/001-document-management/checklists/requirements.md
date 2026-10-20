@@ -31,6 +31,11 @@
 
 ## Notes
 
+- Scope clarification 2026-10-20: FR-027, Story 8, SC-007, the plan, workflow contracts,
+  and quickstart exclude speech software integration and screen-reader-specific requirements/tests.
+  Keyboard operation, visible focus, clear labels, and visible textual feedback remain required.
+  Native browser compatibility is not deliberately disabled.
+
 - Validation iteration 1: all 16 items pass. This is specification readiness, not evidence that
   the feature is implemented or that behavioral/performance tests have passed.
 - CHK001/CHK016: Requirements describe observable behavior and access outcomes. Stakeholder
